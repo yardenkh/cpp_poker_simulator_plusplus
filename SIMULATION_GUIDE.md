@@ -56,7 +56,7 @@ for comparison. Debug builds are for diagnosis rather than throughput estimates.
 
 ```cpp
 // Providers are borrowed and must outlive the game that uses them.
-poker::SimpleAIDecisionProvider policy;
+poker::AIDecisionProvider policy;
 poker::PokerGame game(6, poker::GameConfig{}, 42);
 for (int seat = 0; seat < 6; ++seat)
   game.set_decision_provider(seat, policy);
@@ -84,7 +84,7 @@ integer prize units, any remainder goes to tied players in ascending seat-ID ord
 
 ```cpp
 #include "tournament/Tournament.hpp"
-#include "decision/SimpleAIDecisionProvider.hpp"
+#include "decision/AIDecisionProvider.hpp"
 
 // Define money separately from playing chips. Here the integer prize units
 // represent cents, so the three paid positions award $500, $300 and $200.
@@ -95,7 +95,7 @@ config.prizes = {50000, 30000, 20000};
 config.blind_levels = {{50, 100, 10}, {100, 200, 10}, {200, 400, 10}};
 
 // Providers are borrowed. This simple policy is stateless and can serve all seats.
-poker::SimpleAIDecisionProvider policy;
+poker::AIDecisionProvider policy;
 poker::Tournament tournament(8, config, 42);
 for (int id = 0; id < 8; ++id)
   tournament.set_decision_provider(id, policy);
@@ -177,7 +177,7 @@ For custom experiments:
 
 ```cpp
 #include "simulation/TournamentSimulation.hpp"
-#include "decision/SimpleAIDecisionProvider.hpp"
+#include "decision/AIDecisionProvider.hpp"
 
 poker::TournamentSimulationOptions options;
 options.episodes = 1000;
@@ -193,7 +193,7 @@ const auto totals = poker::run_tournament_simulations(
       // The seat argument allows mixed algorithm lineups. This example uses
       // one stateless policy type, with a private provider object per seat.
       (void)seat;
-      return std::make_unique<poker::SimpleAIDecisionProvider>();
+      return std::make_unique<poker::AIDecisionProvider>();
     },
     rows);
 ```
@@ -266,7 +266,7 @@ options.workers = 4;          // 0 chooses hardware_concurrency.
 options.seed = 42;
 auto result = poker::run_simulations(options, [] {
   // Factory runs serially and creates one provider per seat per worker.
-  return std::make_unique<poker::SimpleAIDecisionProvider>();
+  return std::make_unique<poker::AIDecisionProvider>();
 });
 ```
 

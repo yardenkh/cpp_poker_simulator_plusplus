@@ -6,7 +6,7 @@
 
 // PlayerView supplies the information available to the player and the
 // PlayerDecision type returned by their decision provider.
-#include "view/PlayerView.hpp"
+#include "view/PlayerObservation.hpp"
 
 namespace poker {
 
@@ -22,6 +22,15 @@ public:
   // = 0 makes this an abstract interface: use a derived provider to play.
   // Choosing an action does not itself change the game or move chips.
   virtual PlayerDecision choose_action(const PlayerView &view) = 0;
+
+  // Receives a borrowed public observation; returns the requested action.
+  // Existing human/baseline providers need only the view, so default forwarding
+  // preserves their API. History-aware providers override this entry point.
+  virtual PlayerDecision choose_observation(const PlayerObservation &observation) {
+    return choose_action(observation.view);
+  }
+  // Receives nothing; returns whether the game must record public actions.
+  virtual bool requires_action_history() const { return false; }
 
   // Simulation workers call this at each independent episode. Stochastic or
   // stateful strategies override it to seed their RNG and clear episode state.

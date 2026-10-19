@@ -2,7 +2,7 @@
 // and conservation.
 
 #include "game/PokerGame.hpp"
-#include "decision/SimpleAIDecisionProvider.hpp"
+#include "decision/AIDecisionProvider.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -163,7 +163,7 @@ void test_games() {
   // Headless operation uses no observer and can use the simple AI directly.
   {
     PokerGame g(3, {500, 10, 20});
-    SimpleAIDecisionProvider ai;
+    AIDecisionProvider ai;
     for (int id = 0; id < 3; ++id)
       g.set_decision_provider(id, ai);
     g.set_random_seed(7);

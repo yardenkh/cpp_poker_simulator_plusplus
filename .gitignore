@@ -7,3 +7,7 @@ build*/
 # Local editor settings
 .vscode/
 .idea/
+# Local generated training/checkpoint/policy artifacts
+runs/
+*.mccfr
+*.policy

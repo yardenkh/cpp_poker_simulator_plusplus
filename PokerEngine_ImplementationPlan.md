@@ -45,8 +45,8 @@ poker/
 ├── view/PlayerView.hpp
 ├── view/PlayerView.cpp
 ├── decision/DecisionProvider.hpp
-├── decision/SimpleAIDecisionProvider.hpp
-├── decision/SimpleAIDecisionProvider.cpp
+├── decision/AIDecisionProvider.hpp
+├── decision/AIDecisionProvider.cpp
 ├── decision/HumanDecisionProvider.hpp
 ├── decision/HumanDecisionProvider.cpp
 ├── game/GameObserver.hpp
@@ -1086,10 +1086,10 @@ This is the only interface future player logic needs to implement.
 
 # 20. Simple AI
 
-## Create `decision/SimpleAIDecisionProvider.hpp`
+## Create `decision/AIDecisionProvider.hpp`
 
 ```cpp
-class SimpleAIDecisionProvider final : public DecisionProvider {
+class AIDecisionProvider final : public DecisionProvider {
 public:
     PlayerDecision choose_action(
         const PlayerView& view
@@ -1097,7 +1097,7 @@ public:
 };
 ```
 
-## Create `decision/SimpleAIDecisionProvider.cpp`
+## Create `decision/AIDecisionProvider.cpp`
 
 Use deterministic placeholder logic:
 
@@ -1586,7 +1586,7 @@ Keep `main.cpp` limited to setup:
 read player count
 create TerminalUI
 create HumanDecisionProvider
-create SimpleAIDecisionProvider
+create AIDecisionProvider
 create PokerGame
 
 seat 0 -> human
@@ -1698,7 +1698,7 @@ After all correctness tests pass:
 Run many hands with:
 
 ```text
-SimpleAIDecisionProvider
+AIDecisionProvider
 observer = nullptr
 Release build
 ```

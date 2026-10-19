@@ -12,16 +12,6 @@
 #include <vector>
 
 namespace poker {
-// Optional public action history. paid is the additional chips moved by this
-// action; raise_to in decision is a TOTAL round contribution, as elsewhere.
-struct ActionRecord {
-  PokerStage stage{};
-  int player_id = -1;
-  PlayerDecision decision{};
-  int paid = 0;
-  int current_bet = 0;
-};
-
 // One rules implementation serves synchronous play and externally chosen
 // actions. No console output, neural-network dependency, or per-turn allocation
 // is required. An instance belongs to one thread at a time.
@@ -58,6 +48,9 @@ public:
   int acting_player() const { return acting_player_; }
   bool hand_in_progress() const { return hand_active_; }
   PlayerView current_view() const;
+  // Receives no input; returns this actor's public history and private view.
+  // The history span is valid only until the next game mutation.
+  PlayerObservation current_observation() const;
   void apply_action(const PlayerDecision &decision);
 
   // Reuse allocations/providers/evaluator between independent experiments.

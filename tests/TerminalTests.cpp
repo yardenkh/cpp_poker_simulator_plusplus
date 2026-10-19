@@ -1,6 +1,6 @@
 // Script terminal input and verify it uses engine rules without leaking cards.
 #include "decision/HumanDecisionProvider.hpp"
-#include "decision/SimpleAIDecisionProvider.hpp"
+#include "decision/AIDecisionProvider.hpp"
 #include "game/PokerGame.hpp"
 #include "tournament/Tournament.hpp"
 #include "ui/TerminalUI.hpp"
@@ -101,7 +101,7 @@ void events_and_play() {
 
   // Exercise real provider/observer wiring through a complete uncontested hand.
   HumanDecisionProvider human(ui);
-  SimpleAIDecisionProvider ai;
+  AIDecisionProvider ai;
   PokerGame game(2, {500, 10, 20}, 71);
   game.set_decision_provider(0, human);
   game.set_decision_provider(1, ai);
@@ -117,8 +117,13 @@ void events_and_play() {
   std::ostringstream showdown_output;
   TerminalUI showdown_ui(input, showdown_output);
   PokerGame showdown(2, {500, 10, 20}, 72);
-  showdown.set_decision_provider(0, ai);
-  showdown.set_decision_provider(1, ai);
+  struct PassiveProvider : DecisionProvider {
+    PlayerDecision choose_action(const PlayerView &v) override {
+      return {v.legal_actions.can_check ? ActionType::Check : ActionType::Call, 0};
+    }
+  } passive;
+  showdown.set_decision_provider(0, passive);
+  showdown.set_decision_provider(1, passive);
   showdown.set_observer(&showdown_ui);
   showdown.play_one_hand();
   check(showdown_output.str().find("Main pot:") != std::string::npos,
@@ -132,7 +137,7 @@ void dashboard_play() {
   std::ostringstream output;
   TerminalUI ui(input, output, true);
   HumanDecisionProvider human(ui);
-  SimpleAIDecisionProvider ai;
+  AIDecisionProvider ai;
   PokerGame game(2, {500, 10, 20}, 71);
   game.set_decision_provider(0, human);
   game.set_decision_provider(1, ai);
@@ -221,7 +226,7 @@ void tournament_display() {
   std::istringstream input(std::string(32, '\n'));
   std::ostringstream output;
   TerminalUI ui(input, output, true);
-  SimpleAIDecisionProvider ai;
+  AIDecisionProvider ai;
   TournamentConfig config;
   config.starting_chips = 100;
   config.blind_levels = {{5, 10, 1}, {1000, 2000, 1}};

@@ -1,7 +1,7 @@
 // CLI setup chooses the tournament wrapper or an ordinary match, never poker
 // rules.
 #include "decision/HumanDecisionProvider.hpp"
-#include "decision/SimpleAIDecisionProvider.hpp"
+#include "decision/AIDecisionProvider.hpp"
 #include "game/PokerGame.hpp"
 #include "tournament/Tournament.hpp"
 #include "ui/TerminalUI.hpp"
@@ -36,15 +36,17 @@ int main(int argc, char **argv) {
     // Borrowed providers/listeners are declared first so they outlive the game.
     poker::TerminalUI ui;
     poker::HumanDecisionProvider human(ui);
-    poker::SimpleAIDecisionProvider ai;
+    std::array<poker::AIDecisionProvider, poker::MAX_PLAYERS> ais;
     const auto seed =
         std::random_device{}(); // Obtain entropy once for interactive play.
+    for (int id = 1; id < players; ++id)
+      ais[id].reset_for_episode((static_cast<std::uint64_t>(seed) << 32) + id);
     std::cout << "You are player 0.\n";
     if (regular_game) {
       poker::PokerGame game(players, poker::GameConfig{}, seed);
       game.set_decision_provider(0, human);
       for (int id = 1; id < players; ++id)
-        game.set_decision_provider(id, ai);
+        game.set_decision_provider(id, ais[id]);
       game.set_observer(&ui);
       game.run_match();
       std::cout << "Match winner: player " << game.winner_id() << '\n';
@@ -62,7 +64,7 @@ int main(int argc, char **argv) {
       poker::Tournament tournament(players, config, seed);
       tournament.set_decision_provider(0, human);
       for (int id = 1; id < players; ++id)
-        tournament.set_decision_provider(id, ai);
+        tournament.set_decision_provider(id, ais[id]);
       tournament.set_observer(&ui); // Cards, bets and chip payouts.
       tournament.set_tournament_observer(
           &ui); // Levels, finishes and prize payouts.

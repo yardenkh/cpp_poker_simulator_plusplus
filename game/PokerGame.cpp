@@ -42,6 +42,8 @@ void PokerGame::set_blinds(int small_blind, int big_blind) {
 void PokerGame::set_decision_provider(int id, DecisionProvider &provider) {
   if (id < 0 || id >= table_.num_players)
     throw std::out_of_range("Invalid provider seat");
+  if (provider.requires_action_history() && !history_enabled_)
+    enable_history(true);
   decision_providers_[id] = &provider;
 }
 void PokerGame::set_observer(GameObserver *observer) { observer_ = observer; }
@@ -114,6 +116,10 @@ void PokerGame::reset_episode(std::span<const int> stacks, int dealer_id,
 void PokerGame::enable_history(bool enabled, std::size_t reserve_actions) {
   if (hand_active_)
     throw std::logic_error("Configure history between hands");
+  if (!enabled)
+    for (auto *provider : decision_providers_)
+      if (provider && provider->requires_action_history())
+        throw std::logic_error("A registered provider requires public history");
   if (enabled)
     history_.reserve(reserve_actions);
   history_enabled_ = enabled;
@@ -162,6 +168,7 @@ void PokerGame::enter_stage(PokerStage stage) {
   if (observer_)
     observer_->on_stage_started(stage, table_, pot_manager_);
 }
+
 bool PokerGame::begin_hand() {
   if (hand_active_)
     throw std::logic_error("A hand is already in progress");
@@ -211,11 +218,15 @@ bool PokerGame::advance_to_decision() {
   }
   return false;
 }
+
 PlayerView PokerGame::current_view() const {
   if (acting_player_ < 0 || !hand_active_)
     throw std::logic_error("No pending decision");
   return make_player_view(table_, pot_manager_, betting_state_, current_stage_,
                           acting_player_, current_legal_);
+}
+PlayerObservation PokerGame::current_observation() const {
+  return {current_view(), action_history()};
 }
 void PokerGame::apply_action(const PlayerDecision &decision) {
   // The cached legal actions were computed for this exact pending state.
@@ -300,7 +311,7 @@ void PokerGame::play_one_hand() {
     begin_hand();
   while (advance_to_decision())
     apply_action(
-        decision_providers_[acting_player_]->choose_action(current_view()));
+        decision_providers_[acting_player_]->choose_observation(current_observation()));
 }
 void PokerGame::run_match(int max_hands) {
   int played = 0;

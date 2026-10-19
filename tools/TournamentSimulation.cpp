@@ -1,6 +1,6 @@
 // Runnable headless tournament experiment; no terminal observer or human input.
 #include "simulation/TournamentSimulation.hpp"
-#include "decision/SimpleAIDecisionProvider.hpp"
+#include "decision/AIDecisionProvider.hpp"
 #include <charconv>
 #include <chrono>
 #include <iostream>
@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
         poker::default_fast_hand_evaluator(); // Load lookup data before timing.
     const auto start = std::chrono::steady_clock::now();
     const auto result = poker::run_tournament_simulations(options, [](int) {
-      return std::make_unique<poker::SimpleAIDecisionProvider>();
+      return std::make_unique<poker::AIDecisionProvider>();
     });
     const double seconds =
         std::chrono::duration<double>(std::chrono::steady_clock::now() - start)

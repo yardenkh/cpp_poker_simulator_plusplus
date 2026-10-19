@@ -1,7 +1,7 @@
 // Measures complete-game throughput under several policies, reporting actual
 // hands and decisions.
 
-#include "decision/SimpleAIDecisionProvider.hpp"
+#include "decision/AIDecisionProvider.hpp"
 #include "simulation/Simulation.hpp"
 #include <algorithm>
 #include <chrono>
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
       measure("passive/showdown", options,
               [] { return std::make_unique<Policy>(0); });
       measure("simple", options,
-              [] { return std::make_unique<SimpleAIDecisionProvider>(); });
+              [] { return std::make_unique<AIDecisionProvider>(); });
       measure("fold-heavy", options,
               [] { return std::make_unique<Policy>(1); });
       // Smaller stacks exercise repeated raises, side pots and short matches.

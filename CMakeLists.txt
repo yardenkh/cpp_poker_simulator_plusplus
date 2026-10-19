@@ -37,7 +37,8 @@ add_library(poker_engine
     player/Player.cpp
     table/Table.cpp
     # Compile the placeholder AI so it is available to engine callers.
-    decision/SimpleAIDecisionProvider.cpp
+    decision/AIDecisionProvider.cpp
+    decision/AIActionDistribution.cpp
     # Hand orchestration uses betting, contribution records, and player views.
     betting/Betting.cpp
     pot/PotManager.cpp
@@ -276,6 +277,23 @@ add_custom_target(regenerate_hand_tables
 # ------------------------------------------------------------
 enable_testing()
 
+# Independent toy game for future CFR/CFR+ validation. No Hold'em evaluator
+# tables or poker_engine dependencies are required by this library/test.
+add_library(poker_kuhn research/games/kuhn/KuhnGame.cpp)
+# Export the repository root so consumers can include the module by its full
+# project-relative header path. Link poker_kuhn into the future solver library.
+target_include_directories(poker_kuhn PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+if(MSVC)
+    target_compile_options(poker_kuhn PRIVATE /W4)
+else()
+    target_compile_options(poker_kuhn PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+# Keep the executable beside the toy game's sources, and register it with the
+# normal CTest suite. Linking only poker_kuhn checks the module stays independent.
+add_executable(poker_kuhn_tests research/games/kuhn/KuhnGameTests.cpp)
+target_link_libraries(poker_kuhn_tests PRIVATE poker_kuhn)
+add_test(NAME poker_kuhn_tests COMMAND poker_kuhn_tests)
+
 add_executable(poker_tournament_tests tests/TournamentTests.cpp)
 target_link_libraries(poker_tournament_tests PRIVATE poker_engine)
 add_test(NAME poker_tournament_tests COMMAND poker_tournament_tests)
@@ -324,3 +342,42 @@ add_test(
 set_tests_properties(poker_tests PROPERTIES
     WORKING_DIRECTORY $<TARGET_FILE_DIR:poker_tests>
 )
+
+add_executable(poker_ai_tests tests/AIDecisionProviderTests.cpp)
+target_link_libraries(poker_ai_tests PRIVATE poker_engine)
+add_test(NAME poker_ai_tests COMMAND poker_ai_tests)
+
+# Runtime policy inference is reusable independently of the trainer.
+add_library(poker_policy policy/Observation.cpp policy/FrozenPolicy.cpp policy/TrainedAIDecisionProvider.cpp)
+target_link_libraries(poker_policy PUBLIC poker_engine)
+add_library(poker_mccfr research/mccfr/TrainingConfig.cpp research/mccfr/StrategyTable.cpp
+    research/mccfr/HoldemTrainingGame.cpp research/mccfr/Checkpoint.cpp)
+target_link_libraries(poker_mccfr PUBLIC poker_policy)
+foreach(target poker_policy poker_mccfr)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4)
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endforeach()
+add_executable(poker_train_mccfr tools/TrainMCCFR.cpp)
+target_link_libraries(poker_train_mccfr PRIVATE poker_mccfr)
+add_library(poker_leduc research/games/leduc/LeducGame.cpp)
+target_link_libraries(poker_leduc PUBLIC poker_policy)
+add_executable(poker_mccfr_tests tests/MCCFRTests.cpp)
+target_link_libraries(poker_mccfr_tests PRIVATE poker_mccfr poker_kuhn poker_leduc)
+add_test(NAME poker_mccfr_tests COMMAND poker_mccfr_tests)
+add_test(NAME poker_policy_fresh_process COMMAND poker_mccfr_tests --read-policy mccfr-fresh-process.policy)
+set_tests_properties(poker_policy_fresh_process PROPERTIES DEPENDS poker_mccfr_tests)
+target_sources(poker_mccfr PRIVATE research/mccfr/Evaluation.cpp)
+add_executable(poker_evaluate_mccfr tools/EvaluateMCCFR.cpp)
+target_link_libraries(poker_evaluate_mccfr PRIVATE poker_mccfr)
+
+# Keep warnings enabled on adapter/test executables too.
+foreach(target poker_leduc poker_train_mccfr poker_evaluate_mccfr poker_mccfr_tests)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4)
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endforeach()
